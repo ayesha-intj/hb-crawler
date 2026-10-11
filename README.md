@@ -1,32 +1,73 @@
 # HB Crawler
-A polite crawler that collects **fully remote** startup jobs from
-[startup.jobs](https://startup.jobs/remote-jobs), stores them in SQLite, serves
-them through a FastAPI backend and shows them in a Next.js job board.
-Runs locally only.
+
+A job board of **fully remote** startup jobs, collected from
+[startup.jobs](https://startup.jobs/remote-jobs) by a polite crawler.
+
+- **Backend:** Python crawler + FastAPI + SQLite
+- **Frontend:** Next.js 16 + Tailwind CSS 4
+
+## Features
+
+- **Fully remote only:** hybrid and on-site jobs are filtered out.
+- **Polite crawling:**
+  - respects robots.txt;
+  - sends one request every 10 seconds;
+  - stops if the site blocks it.
+- **Official API fallback:** if the website blocks the crawler, it uses the official
+  Startup Jobs API instead.
+- **Job board:** search, date filters, pagination and job detail pages.
+- **Live crawler panel:** start, stop, progress, and the jobs added in real time.
+
 ## Requirements
-Python 3.11+, Node.js 20.9+, Git. Versions are pinned on both sides
-(`backend/requirements*.txt`, `frontend/package.json` + `package-lock.json`).
-## Backend
+
+Python 3.11+, Node.js 20.9+
+
+## Setup
+
+**Backend**, from `backend/`:
+
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
-cp .env.example .env # then set CONTACT_EMAIL
-python -m pytest # 31 tests must pass
-python -m app.cli crawl --max-pages 1 --max-new 5 # first small crawl
-uvicorn app.main:app --reload # API on http://127.0.0.1:8000/docs
+python -m venv .venv
+.venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env          # macOS/Linux: cp .env.example .env
 ```
-## Frontend
+
+**Frontend**, from `frontend/`:
+
 ```bash
-cd frontend
-npm ci # exact versions from package-lock.json
-cp .env.local.example .env.local
-npm run dev # http://localhost:3000
+npm ci
+copy .env.local.example .env.local   # macOS/Linux: cp .env.local.example .env.local
 ```
-## Rules the crawler follows
-robots.txt is read before every run, one request every 10 seconds, honest
-User-Agent with a contact email, stops on HTTP 403/429, never touches login,
-apply or paid "Plus" pages. If the website blocks the crawler, it never tries to
-disguise itself: with `STARTUP_JOBS_API_KEY` set it switches to the official
-Startup Jobs API instead. Every job links back to startup.jobs.
-Re-publishing startup.jobs data for commercial purposes needs their permission.
+
+## Run
+
+Use two terminals.
+
+```bash
+# backend/ (virtual environment active)
+uvicorn app.main:app --reload
+
+# frontend/
+npm run dev
+```
+
+Open **http://localhost:3000** and click **Run live crawler**.
+
+To crawl from the terminal instead: `python -m app.cli crawl`, run from `backend/`.
+
+## Configuration
+
+Settings live in `backend/.env`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `CRAWL_DELAY_SECONDS` | `10` | Seconds between requests (minimum 5) |
+| `MAX_LISTING_PAGES` | `3` | Listing pages read per run |
+| `MAX_NEW_JOBS` | `50` | New jobs saved per run |
+
+## Data source
+
+Job data comes from [startup.jobs](https://startup.jobs). Every listing links back to
+its original page. Their [terms](https://startup.jobs/terms) allow re-publishing
+the data for non-commercial use only.
