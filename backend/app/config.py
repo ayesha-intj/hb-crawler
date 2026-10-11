@@ -34,7 +34,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        origins_list = []
+        origins_list = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
 
         for origin in self.cors_origins.split(","):
             cleaned = origin.strip()

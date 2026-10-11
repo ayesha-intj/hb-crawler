@@ -1,5 +1,7 @@
 """Read-only queries used by the API routes."""
 
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -7,7 +9,11 @@ from app.models import CrawlRun, Job
 
 
 def list_jobs(
-    session: Session, query: str | None, page: int, page_size: int
+    session: Session,
+    query: str | None,
+    page: int,
+    page_size: int,
+    posted_within_days: int | None = None,
 ) -> tuple[list[Job], int]:
     """Return one page of jobs (newest first) and the total number of matches."""
     stmt = select(Job)
@@ -20,6 +26,9 @@ def list_jobs(
                 Job.location.ilike(pattern),
             )
         )
+    if posted_within_days:
+        since = datetime.now(UTC) - timedelta(days=posted_within_days)
+        stmt = stmt.where(Job.posted_at >= since)
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = session.scalars(
         stmt.order_by(Job.posted_at.desc().nulls_last(), Job.job_id.desc())

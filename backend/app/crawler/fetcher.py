@@ -1,10 +1,13 @@
 """Polite HTTP access to startup.jobs: robots.txt, fixed pace, honest identity."""
 
 import logging
+import threading
 import time
 from typing import Self
 from urllib.robotparser import RobotFileParser
+
 import httpx
+
 from app.crawler.urls import ROBOTS_URL, is_forbidden
 
 log = logging.getLogger(__name__)
@@ -14,8 +17,13 @@ class CrawlerError(Exception):
     """A problem that stops the current crawl run."""
 
 
+class CrawlCancelled(CrawlerError):
+    """The user asked to stop (dashboard Stop button)."""
+
+
 class BlockedError(CrawlerError):
     """HTTP 403 or 429: the site asked us to stop.
+
     We never work around this (no browser disguise, no stealth plugins, no proxy
     rotation). The pipeline may switch to the official API instead.
     """
@@ -24,9 +32,16 @@ class BlockedError(CrawlerError):
 class PoliteFetcher:
     """Downloads pages one at a time, waiting `delay` seconds between requests."""
 
-    def __init__(self, user_agent: str, delay: float, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        user_agent: str,
+        delay: float,
+        timeout: float = 30.0,
+        stop_event: threading.Event | None = None,
+    ) -> None:
         self.user_agent = user_agent
         self.delay = delay
+        self.stop_event = stop_event or threading.Event()
         self._last_request = 0.0
         self._robots: RobotFileParser | None = None
         self._client = httpx.Client(
@@ -41,10 +56,10 @@ class PoliteFetcher:
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exec_info: object) -> None:
+    def __exit__(self, *exc_info: object) -> None:
         self._client.close()
 
-    # ----- robots.txt -----
+    # -- robots.txt ---------------------------------------------------------
     def load_robots(self) -> None:
         """Read robots.txt once. Refuse to crawl if it cannot be read (fail safe)."""
         response = self._request(ROBOTS_URL)
@@ -63,7 +78,7 @@ class PoliteFetcher:
             raise CrawlerError("load_robots() must be called before crawling.")
         return self._robots.can_fetch(self.user_agent, url) and not is_forbidden(url)
 
-    # ----- downloading -----
+    # -- downloading --------------------------------------------------------
     def get_html(self, url: str) -> str | None:
         """Return the page HTML, or None if this one page could not be fetched."""
         if not self.allowed(url):
@@ -74,9 +89,10 @@ class PoliteFetcher:
 
     def _request(self, url: str, retries: int = 2) -> httpx.Response | None:
         for attempt in range(1, retries + 2):
-            wait = self.delay - (time.monotonic() - self._last_request)
-            if wait > 0:
-                time.sleep(wait)
+            wait = max(0.0, self.delay - (time.monotonic() - self._last_request))
+            # Event.wait sleeps like time.sleep, but wakes up at once if Stop is pressed.
+            if self.stop_event.wait(wait):
+                raise CrawlCancelled("Stopped by user")
             try:
                 response = self._client.get(url)
             except httpx.TransportError as error:
