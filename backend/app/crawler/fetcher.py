@@ -50,7 +50,7 @@ class PoliteFetcher:
         response = self._request(ROBOTS_URL)
         if response is None:
             raise CrawlerError("Could not read robots.txt - not crawling without it.")
-        parser = RobotFileParser
+        parser = RobotFileParser()
         parser.parse(response.text.splitlines())
         self._robots = parser
         site_delay = parser.crawl_delay(self.user_agent)
