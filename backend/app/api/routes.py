@@ -10,6 +10,12 @@ from app.database import get_session
 from app.schemas import CrawlStatus, JobDetail, JobListResponse, JobSummary
 from app.services import job_queries
 
+from fastapi import BackgroundTasks, HTTPException
+from app.crawler.pipeline import run_crawl
+from app.crawler.fetcher import PoliteFetcher
+from app.config import get_settings
+from app.database import SessionLocal
+
 router = APIRouter(prefix="/api")
 SessionDep = Annotated[Session, Depends(get_session)]
 
@@ -56,3 +62,25 @@ def get_job(job_id: int, session: SessionDep) -> JobDetail:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return JobDetail.model_validate(job)
+
+
+@router.post("/crawl")
+def trigger_crawl(background_tasks: BackgroundTasks):
+    """Trigger a background crawl run from the frontend UI."""
+    try:
+        background_tasks.add_task(_execute_background_crawl)
+        return {"status": "success", "message": "Crawler started in the background."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _execute_background_crawl():
+    db = SessionLocal()
+    settings = get_settings()
+    fetcher = PoliteFetcher(
+        delay=settings.request_delay, user_agent=settings.user_agent
+    )
+    try:
+        run_crawl(db, settings, fetcher)
+    finally:
+        db.close()
