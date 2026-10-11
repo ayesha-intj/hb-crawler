@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/* ---------- Design tokens ----------
+   Calm graphite base, one muted indigo accent, semantic colours used sparingly. */
+@theme {
+  --color-canvas: #0b0d12;
+  --color-accent: #8b95f5;
+  --color-accent-strong: #5b67d8;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(60rem 30rem at 15% -10%, rgb(91 103 216 / 0.12), transparent 60%),
+    radial-gradient(40rem 24rem at 100% 0%, rgb(148 163 184 / 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* ---------- Surfaces (subtle glass) ---------- */
+@utility surface {
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 0.875rem;
+  background-color: rgb(255 255 255 / 0.03);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 12px 32px -20px rgb(0 0 0 / 0.8);
+}
+
+@utility field {
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 0.625rem;
+  background-color: rgb(0 0 0 / 0.25);
+  color: rgb(244 244 245);
+  transition: border-color 150ms, box-shadow 150ms;
+  &::placeholder {
+    color: rgb(113 113 122);
+  }
+  &:focus {
+    outline: none;
+    border-color: rgb(139 149 245 / 0.6);
+    box-shadow: 0 0 0 3px rgb(139 149 245 / 0.15);
+  }
+}
+
+/* ---------- Buttons ---------- */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 150ms, border-color 150ms, color 150ms, opacity 150ms;
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+@utility btn-primary {
+  color: white;
+  background-color: var(--color-accent-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  &:hover:not(:disabled) {
+    background-color: #6773e3;
+  }
+}
+
+@utility btn-ghost {
+  color: rgb(228 228 231);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.03);
+  &:hover:not(:disabled) {
+    background-color: rgb(255 255 255 / 0.07);
+  }
+}
+
+@utility btn-danger {
+  color: rgb(253 164 175);
+  border: 1px solid rgb(244 63 94 / 0.3);
+  background-color: rgb(244 63 94 / 0.08);
+  &:hover:not(:disabled) {
+    background-color: rgb(244 63 94 / 0.14);
+  }
+}
+
+/* ---------- Job description (sanitised HTML from the backend) ---------- */
+@layer components {
+  .job-description {
+    color: rgb(212 212 216);
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+  .job-description h2,
+  .job-description h3,
+  .job-description h4 {
+    margin: 1.75em 0 0.5em;
+    color: rgb(250 250 250);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .job-description > :first-child {
+    margin-top: 0;
+  }
+  .job-description p,
+  .job-description ul,
+  .job-description ol {
+    margin: 0.75em 0;
+  }
+  .job-description ul {
+    list-style: disc;
+    padding-left: 1.25em;
+  }
+  .job-description ol {
+    list-style: decimal;
+    padding-left: 1.25em;
+  }
+  .job-description li {
+    margin: 0.3em 0;
+  }
+  .job-description li::marker {
+    color: rgb(113 113 122);
+  }
+  .job-description a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .job-description strong,
+  .job-description b {
+    color: rgb(250 250 250);
+    font-weight: 600;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
