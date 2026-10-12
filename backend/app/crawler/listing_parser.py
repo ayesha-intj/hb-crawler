@@ -42,8 +42,8 @@ def _job_ids_in(element: Tag) -> set[int]:
     ids = set()
     for link in element.find_all("a", href=True):
         job_id = job_id_from_url(link["href"])
-    if job_id is not None:
-        ids.add(job_id)
+        if job_id is not None:
+            ids.add(job_id)
     return ids
 
 
@@ -67,33 +67,33 @@ def parse_listing(html: str) -> list[ListingItem]:
         title = squash(link.get_text())
         if job_id is None or job_id in items or not title or title.lower() == "apply":
             continue
-    card = _card_for(link, job_id)
-    company_link = None
-    locations: list[str] = []
-    workplace = None
-    for other in card.find_all("a", href=True):
-        path = urlparse(absolute_url(other["href"])).path
-        if (
-            path.startswith("/company/")
-            and company_link is None
-            and squash(other.get_text())
-        ):
-            company_link = other
-        elif path.startswith("/locations/"):
-            locations.append(squash(other.get_text()))
-        elif workplace is None:
-            workplace = workplace_from_link(other)
-    date_match = LISTING_DATE_PATTERN.search(card.get_text(" "))
-    items[job_id] = ListingItem(
-        job_id=job_id,
-        url=canonical_job_url(link["href"]),
-        title=title,
-        company_name=squash(company_link.get_text()) if company_link else "",
-        company_url=absolute_url(company_link["href"]) if company_link else None,
-        location=", ".join(dict.fromkeys(filter(None, locations))),
-        workplace=workplace,
-        posted_at=parse_datetime(date_match.group(0)) if date_match else None,
-    )
+        card = _card_for(link, job_id)
+        company_link = None
+        locations: list[str] = []
+        workplace = None
+        for other in card.find_all("a", href=True):
+            path = urlparse(absolute_url(other["href"])).path
+            if (
+                path.startswith("/company/")
+                and company_link is None
+                and squash(other.get_text())
+            ):
+                company_link = other
+            elif path.startswith("/locations/"):
+                locations.append(squash(other.get_text()))
+            elif workplace is None:
+                workplace = workplace_from_link(other)
+        date_match = LISTING_DATE_PATTERN.search(card.get_text(" "))
+        items[job_id] = ListingItem(
+            job_id=job_id,
+            url=canonical_job_url(link["href"]),
+            title=title,
+            company_name=squash(company_link.get_text()) if company_link else "",
+            company_url=absolute_url(company_link["href"]) if company_link else None,
+            location=", ".join(dict.fromkeys(filter(None, locations))),
+            workplace=workplace,
+            posted_at=parse_datetime(date_match.group(0)) if date_match else None,
+        )
     return list(items.values())
 
 
